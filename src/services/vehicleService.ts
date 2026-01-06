@@ -1,3 +1,4 @@
+// src/services/vehicleService.ts
 import { apiWrapper } from './api';
 
 // Definição de tipos para veículos e usuários
@@ -84,6 +85,20 @@ export interface User {
 export interface DailyWashResponse {
 	success: boolean;
 	message: string;
+}
+
+/**
+ * ✅ DTO alinhado ao backend (PUT /admin-car)
+ * O backend valida via AdminUpdateCarDTO
+ */
+export interface AdminUpdateCarDTO {
+	carId: number;
+	userId: number;
+	licensePlate?: string;
+	brand?: string;
+	model?: string;
+	year?: number;
+	color?: string;
 }
 
 class VehicleService {

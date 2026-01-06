@@ -39,12 +39,21 @@ import { Toaster } from "sonner";
 import PurchasedServicesHistory from "./pages/PurchasedServicesHistory/PurchasedServicesHistory";
 import ClientDetail from "./pages/Client/ClientDetail";
 
+// ✅ AdminCar Page (ajuste o caminho se necessário)
+import AdminCarPage from "./pages/AdminCar/AdminCarPage";
+
+type AllowedRole = "ADMIN" | "MANAGER" | "USER";
+
 const App: React.FC = () => {
-	const renderPrivateRoute = (path: string, element: JSX.Element) => (
+	const renderPrivateRoute = (
+		path: string,
+		element: JSX.Element,
+		allowedRoles?: AllowedRole[]
+	) => (
 		<Route
 			path={path}
 			element={
-				<PrivateRoute>
+				<PrivateRoute allowedRoles={allowedRoles}>
 					{element}
 				</PrivateRoute>
 			}
@@ -53,7 +62,7 @@ const App: React.FC = () => {
 
 	return (
 		<>
-			<Toaster closeButton expand position='top-right' richColors />
+			<Toaster closeButton expand position="top-right" richColors />
 			<AuthProvider>
 				<Routes>
 					{/* Ruta de Login com redireção para usuários autenticados */}
@@ -67,16 +76,10 @@ const App: React.FC = () => {
 					/>
 
 					{/* Ruta de recuperação de senha */}
-					<Route
-						path="/forgot-password"
-						element={<ForgotPasswordPage />}
-					/>
+					<Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
 					{/* Ruta de redefinição de senha */}
-					<Route
-						path="/reset-password"
-						element={<ResetPasswordPage />}
-					/>
+					<Route path="/reset-password" element={<ResetPasswordPage />} />
 
 					{/* Politica de Privacidade */}
 					<Route path="/politica-privacidade" element={<Privacy />} />
@@ -135,6 +138,9 @@ const App: React.FC = () => {
 
 						{/* Consultar veículo */}
 						{renderPrivateRoute("/consultar-veiculo", <ConsultVehiclePage />)}
+
+						{/* ✅ Admin: Gerenciar veículos */}
+						{renderPrivateRoute("/admin/cars", <AdminCarPage />, ["ADMIN", "MANAGER"])}
 					</Route>
 
 					{/* Ruta de página não encontrada */}

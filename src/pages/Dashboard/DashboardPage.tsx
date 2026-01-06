@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { BarChart3, Users, ShoppingBag, Calendar, DollarSign, TrendingUp, Award, MapPin } from "lucide-react";
+import {
+	BarChart3,
+	Users,
+	ShoppingBag,
+	Calendar,
+	DollarSign,
+	TrendingUp,
+	Award,
+	MapPin,
+	Car,
+} from "lucide-react";
 import { apiWrapper } from "../../services/api";
 import handleError from "../../error/handleError";
 import { useAuth } from '../../hooks/useAuth';
@@ -110,7 +120,6 @@ export interface YearlyRevenueHistory {
 	total: number;
 }
 
-
 const DashboardPage: React.FC = () => {
 	const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 	const [metrics, setMetrics] = useState<MetricsData | null>(null);
@@ -121,6 +130,8 @@ const DashboardPage: React.FC = () => {
 
 	const { user } = useAuth();
 	const navigate = useNavigate();
+
+	const canManageCars = ["ADMIN", "MANAGER"].includes(String((user as any)?.role ?? ""));
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -187,6 +198,16 @@ const DashboardPage: React.FC = () => {
 					<h1 className="heading-primary">
 						Bem-vindo de volta, {user?.name || "Usuário"}
 					</h1>
+
+					{canManageCars && (
+						<Button
+							className="bg-[#FF5226] hover:opacity-90"
+							onClick={() => navigate("/admin/cars")}
+						>
+							<Car className="w-4 h-4 mr-2" />
+							Gerenciar veículos
+						</Button>
+					)}
 				</div>
 
 				{/* Main Metrics Cards */}
@@ -251,26 +272,26 @@ const DashboardPage: React.FC = () => {
 								<div className="overflow-x-auto">
 									<table className="w-full border-collapse">
 										<thead>
-											<tr className="border-b">
-												<th className="p-3 text-left font-medium text-gray-500">Ano</th>
-												<th className="p-3 text-right font-medium text-gray-500">Receita Total</th>
-											</tr>
+										<tr className="border-b">
+											<th className="p-3 text-left font-medium text-gray-500">Ano</th>
+											<th className="p-3 text-right font-medium text-gray-500">Receita Total</th>
+										</tr>
 										</thead>
 										<tbody>
-											{dashboardData?.yearlyRevenueHistory?.length ? (
-												dashboardData.yearlyRevenueHistory.map((item) => (
-													<tr key={item.year} className="border-b hover:bg-gray-50">
-														<td className="p-3">{item.year}</td>
-														<td className="p-3 text-right font-medium">{formatCurrency(item.total)}</td>
-													</tr>
-												))
-											) : (
-												<tr>
-													<td colSpan={2} className="p-3 text-center text-gray-500">
-														Nenhum dado disponível
-													</td>
+										{dashboardData?.yearlyRevenueHistory?.length ? (
+											dashboardData.yearlyRevenueHistory.map((item) => (
+												<tr key={item.year} className="border-b hover:bg-gray-50">
+													<td className="p-3">{item.year}</td>
+													<td className="p-3 text-right font-medium">{formatCurrency(item.total)}</td>
 												</tr>
-											)}
+											))
+										) : (
+											<tr>
+												<td colSpan={2} className="p-3 text-center text-gray-500">
+													Nenhum dado disponível
+												</td>
+											</tr>
+										)}
 										</tbody>
 									</table>
 								</div>
@@ -288,48 +309,48 @@ const DashboardPage: React.FC = () => {
 								<div className="overflow-x-auto">
 									<table className="w-full border-collapse">
 										<thead>
-											<tr className="border-b">
-												<th className="p-3 text-left font-medium text-gray-500">Serviço</th>
-												<th className="p-3 text-right font-medium text-gray-500">Preço</th>
-												<th className="p-3 text-right font-medium text-gray-500">Vendas</th>
-											</tr>
+										<tr className="border-b">
+											<th className="p-3 text-left font-medium text-gray-500">Serviço</th>
+											<th className="p-3 text-right font-medium text-gray-500">Preço</th>
+											<th className="p-3 text-right font-medium text-gray-500">Vendas</th>
+										</tr>
 										</thead>
 										<tbody>
-											{dashboardData?.topServicesSold?.data?.length ? (
-												dashboardData.topServicesSold.data.map((item) => (
-													<tr key={item.service.id} className="border-b hover:bg-gray-50">
-														<td className="p-3">
-															<div className="flex items-center gap-3">
-																<div className="w-10 h-10 overflow-hidden rounded-md bg-gray-100 flex-shrink-0">
-																	<img
-																		src={item.service.imageUrl || "/placeholder.svg"}
-																		alt={item.service.name}
-																		className="w-full h-full object-cover"
-																	/>
-																</div>
-																<div>
-																	<p className="font-medium">{item.service.name}</p>
-																	<Button
-																		variant="link"
-																		className="text-[#FF5226] p-0 h-auto text-xs"
-																		onClick={() => navigate(`/services/edit/${item.service.id}`)}
-																	>
-																		Ver detalhes
-																	</Button>
-																</div>
+										{dashboardData?.topServicesSold?.data?.length ? (
+											dashboardData.topServicesSold.data.map((item) => (
+												<tr key={item.service.id} className="border-b hover:bg-gray-50">
+													<td className="p-3">
+														<div className="flex items-center gap-3">
+															<div className="w-10 h-10 overflow-hidden rounded-md bg-gray-100 flex-shrink-0">
+																<img
+																	src={item.service.imageUrl || "/placeholder.svg"}
+																	alt={item.service.name}
+																	className="w-full h-full object-cover"
+																/>
 															</div>
-														</td>
-														<td className="p-3 text-right">{formatCurrency(item.service.price)}</td>
-														<td className="p-3 text-right font-medium">{item.purchaseCount}</td>
-													</tr>
-												))
-											) : (
-												<tr>
-													<td colSpan={3} className="p-3 text-center text-gray-500">
-														Nenhum dado disponível
+															<div>
+																<p className="font-medium">{item.service.name}</p>
+																<Button
+																	variant="link"
+																	className="text-[#FF5226] p-0 h-auto text-xs"
+																	onClick={() => navigate(`/services/edit/${item.service.id}`)}
+																>
+																	Ver detalhes
+																</Button>
+															</div>
+														</div>
 													</td>
+													<td className="p-3 text-right">{formatCurrency(item.service.price)}</td>
+													<td className="p-3 text-right font-medium">{item.purchaseCount}</td>
 												</tr>
-											)}
+											))
+										) : (
+											<tr>
+												<td colSpan={3} className="p-3 text-center text-gray-500">
+													Nenhum dado disponível
+												</td>
+											</tr>
+										)}
 										</tbody>
 									</table>
 								</div>
@@ -350,32 +371,32 @@ const DashboardPage: React.FC = () => {
 								<div className="overflow-x-auto">
 									<table className="w-full border-collapse">
 										<thead>
-											<tr className="border-b">
-												<th className="p-3 text-left font-medium text-gray-500">Cliente</th>
-												<th className="p-3 text-left font-medium text-gray-500">Email</th>
-												<th className="p-3 text-right font-medium text-gray-500">Lavagens</th>
-											</tr>
+										<tr className="border-b">
+											<th className="p-3 text-left font-medium text-gray-500">Cliente</th>
+											<th className="p-3 text-left font-medium text-gray-500">Email</th>
+											<th className="p-3 text-right font-medium text-gray-500">Lavagens</th>
+										</tr>
 										</thead>
 										<tbody>
-											{dashboardData?.topUsersByDailyWashes?.data?.length ? (
-												dashboardData.topUsersByDailyWashes.data.map((item) => (
-													<tr
-														key={item.user.id}
-														className="border-b hover:bg-gray-50 cursor-pointer hover:text-[#FF5226]"
-														onClick={() => window.open(`/clients/${item.user.id}`, '_blank')}
-													>
-														<td className="p-3 font-medium">{item.user.name}</td>
-														<td className="p-3 text-sm">{item.user.email}</td>
-														<td className="p-3 text-right font-medium">{item.dailyWashesCount}</td>
-													</tr>
-												))
-											) : (
-												<tr>
-													<td colSpan={3} className="p-3 text-center text-gray-500">
-														Nenhum dado disponível
-													</td>
+										{dashboardData?.topUsersByDailyWashes?.data?.length ? (
+											dashboardData.topUsersByDailyWashes.data.map((item) => (
+												<tr
+													key={item.user.id}
+													className="border-b hover:bg-gray-50 cursor-pointer hover:text-[#FF5226]"
+													onClick={() => window.open(`/clients/${item.user.id}`, "_blank")}
+												>
+													<td className="p-3 font-medium">{item.user.name}</td>
+													<td className="p-3 text-sm">{item.user.email}</td>
+													<td className="p-3 text-right font-medium">{item.dailyWashesCount}</td>
 												</tr>
-											)}
+											))
+										) : (
+											<tr>
+												<td colSpan={3} className="p-3 text-center text-gray-500">
+													Nenhum dado disponível
+												</td>
+											</tr>
+										)}
 										</tbody>
 									</table>
 								</div>
@@ -393,42 +414,42 @@ const DashboardPage: React.FC = () => {
 								<div className="overflow-x-auto">
 									<table className="w-full border-collapse">
 										<thead>
-											<tr className="border-b">
-												<th className="p-3 text-left font-medium text-gray-500">Plano</th>
-												<th className="p-3 text-right font-medium text-gray-500">Preço</th>
-												<th className="p-3 text-right font-medium text-gray-500">Duração</th>
-												<th className="p-3 text-right font-medium text-gray-500">Assinaturas</th>
-											</tr>
+										<tr className="border-b">
+											<th className="p-3 text-left font-medium text-gray-500">Plano</th>
+											<th className="p-3 text-right font-medium text-gray-500">Preço</th>
+											<th className="p-3 text-right font-medium text-gray-500">Duração</th>
+											<th className="p-3 text-right font-medium text-gray-500">Assinaturas</th>
+										</tr>
 										</thead>
 										<tbody>
-											{dashboardData?.topPlansSold?.data?.length ? (
-												dashboardData.topPlansSold.data.map((item) => (
-													<tr key={item.plan.id} className="border-b hover:bg-gray-50">
-														<td className="p-3">
-															<div className="flex items-center gap-2">
-																<span className="font-medium">{item.plan.name}</span>
-																{item.plan.isBestChoice && (
-																	<span className="px-2 py-0.5 text-xs font-medium text-white bg-[#FF5226] rounded-full">
+										{dashboardData?.topPlansSold?.data?.length ? (
+											dashboardData.topPlansSold.data.map((item) => (
+												<tr key={item.plan.id} className="border-b hover:bg-gray-50">
+													<td className="p-3">
+														<div className="flex items-center gap-2">
+															<span className="font-medium">{item.plan.name}</span>
+															{item.plan.isBestChoice && (
+																<span className="px-2 py-0.5 text-xs font-medium text-white bg-[#FF5226] rounded-full">
 																		Popular
 																	</span>
-																)}
-															</div>
-															<p className="text-xs text-gray-500 mt-1">{item.plan.description || '-'}</p>
-														</td>
-														<td className="p-3 text-right">{formatCurrency(item.plan.price)}</td>
-														<td className="p-3 text-right">
-															{item.plan.duration} {item.plan.periodicityType === 'MONTH' ? 'dias' : 'dias'}
-														</td>
-														<td className="p-3 text-right font-medium">{item.subscriptionCount}</td>
-													</tr>
-												))
-											) : (
-												<tr>
-													<td colSpan={4} className="p-3 text-center text-gray-500">
-														Nenhum dado disponível
+															)}
+														</div>
+														<p className="text-xs text-gray-500 mt-1">{item.plan.description || "-"}</p>
 													</td>
+													<td className="p-3 text-right">{formatCurrency(item.plan.price)}</td>
+													<td className="p-3 text-right">
+														{item.plan.duration} {item.plan.periodicityType === "MONTH" ? "dias" : "dias"}
+													</td>
+													<td className="p-3 text-right font-medium">{item.subscriptionCount}</td>
 												</tr>
-											)}
+											))
+										) : (
+											<tr>
+												<td colSpan={4} className="p-3 text-center text-gray-500">
+													Nenhum dado disponível
+												</td>
+											</tr>
+										)}
 										</tbody>
 									</table>
 								</div>
@@ -457,7 +478,7 @@ const DashboardPage: React.FC = () => {
 												<select
 													id="location-select"
 													className="w-full md:w-64 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF5226] focus:border-transparent"
-													value={selectedLocation || ''}
+													value={selectedLocation || ""}
 													onChange={(e) => {
 														setSelectedLocation(e.target.value ? Number(e.target.value) : null);
 														if (e.target.value) {
@@ -497,67 +518,55 @@ const DashboardPage: React.FC = () => {
 
 									<div className="h-80">
 										{(() => {
-											// Show all locations
 											if (showAllLocations) {
-												// Get all unique dates across all locations
 												const allDates = new Set<string>();
-												dashboardData.washLocationsByDailyWashes.data.forEach(locationData => {
-													locationData.dailyWashesByDate.forEach(item => {
+												dashboardData.washLocationsByDailyWashes.data.forEach((locationData) => {
+													locationData.dailyWashesByDate.forEach((item) => {
 														allDates.add(item.date);
 													});
 												});
 
-												// Create a sorted array of all dates
 												const sortedDates = Array.from(allDates).sort((a, b) =>
 													new Date(a).getTime() - new Date(b).getTime()
 												);
 
-												// Define a type for chart data points
 												type ChartDataPoint = {
 													date: string;
 													[key: string]: string | number;
 												};
 
-												// Create a base chart data structure with all dates
-												const chartData = sortedDates.map(date => {
+												const chartData = sortedDates.map((date) => {
 													const dataPoint: ChartDataPoint = { date };
 													return dataPoint;
 												});
 
-												// Add data for each location
-												dashboardData.washLocationsByDailyWashes.data.forEach(locationData => {
+												dashboardData.washLocationsByDailyWashes.data.forEach((locationData) => {
 													const locationName = locationData.location.name;
 
-													// Create a map of date to count for this location
 													const dateCountMap: Record<string, number> = {};
-													locationData.dailyWashesByDate.forEach(item => {
+													locationData.dailyWashesByDate.forEach((item) => {
 														dateCountMap[item.date] = item.count;
 													});
 
-													// Add this location's data to each date point
-													chartData.forEach(dataPoint => {
+													chartData.forEach((dataPoint) => {
 														dataPoint[locationName] = dateCountMap[dataPoint.date] || 0;
 													});
 												});
 
-												// Generate a list of colors for the lines
 												const colors = [
-													"#FF5226", // Primary color
-													"#3B82F6", // Blue
-													"#10B981", // Green
-													"#F59E0B", // Yellow
-													"#8B5CF6", // Purple
-													"#EC4899", // Pink
-													"#14B8A6", // Teal
-													"#F43F5E"  // Rose
+													"#FF5226",
+													"#3B82F6",
+													"#10B981",
+													"#F59E0B",
+													"#8B5CF6",
+													"#EC4899",
+													"#14B8A6",
+													"#F43F5E",
 												];
 
 												return (
 													<ResponsiveContainer width="100%" height="100%">
-														<LineChart
-															data={chartData}
-															margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-														>
+														<LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
 															<CartesianGrid strokeDasharray="3 3" />
 															<XAxis
 																dataKey="date"
@@ -570,15 +579,14 @@ const DashboardPage: React.FC = () => {
 															<Tooltip
 																labelFormatter={(value) => {
 																	const date = new Date(value);
-																	return `Data: ${date.toLocaleDateString('pt-BR')}`;
+																	return `Data: ${date.toLocaleDateString("pt-BR")}`;
 																}}
 															/>
 															<Legend />
-
-															{/* Create a line for each location */}
 															{dashboardData.washLocationsByDailyWashes.data.map((locationData, index) => {
 																const locationName = locationData.location.name;
 																const colorIndex = index % colors.length;
+
 																return (
 																	<Line
 																		key={locationData.location.id}
@@ -593,9 +601,7 @@ const DashboardPage: React.FC = () => {
 														</LineChart>
 													</ResponsiveContainer>
 												);
-											}
-											// Show single location
-											else if (selectedLocation) {
+											} else if (selectedLocation) {
 												const selectedLocationData = dashboardData.washLocationsByDailyWashes.data.find(
 													(item) => item.location.id === selectedLocation
 												);
@@ -608,20 +614,16 @@ const DashboardPage: React.FC = () => {
 													);
 												}
 
-												// Format the data for the chart
 												const chartData = selectedLocationData.dailyWashesByDate
-													.map(item => ({
+													.map((item) => ({
 														date: item.date,
-														lavagens: item.count
+														lavagens: item.count,
 													}))
 													.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
 												return (
 													<ResponsiveContainer width="100%" height="100%">
-														<LineChart
-															data={chartData}
-															margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-														>
+														<LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
 															<CartesianGrid strokeDasharray="3 3" />
 															<XAxis
 																dataKey="date"
@@ -634,26 +636,19 @@ const DashboardPage: React.FC = () => {
 															<Tooltip
 																labelFormatter={(value) => {
 																	const date = new Date(value);
-																	return `Data: ${date.toLocaleDateString('pt-BR')}`;
+																	return `Data: ${date.toLocaleDateString("pt-BR")}`;
 																}}
-																formatter={(value) => [`${value} lavagens`, 'Lavagens']}
+																formatter={(value) => [`${value} lavagens`, "Lavagens"]}
 															/>
 															<Legend />
-															<Line
-																type="monotone"
-																dataKey="lavagens"
-																stroke="#FF5226"
-																activeDot={{ r: 8 }}
-																name="Lavagens"
-															/>
+															<Line type="monotone" dataKey="lavagens" stroke="#FF5226" activeDot={{ r: 8 }} name="Lavagens" />
 														</LineChart>
 													</ResponsiveContainer>
 												);
 											} else {
-												// No location selected and not showing all
 												return (
 													<div className="h-full flex items-center justify-center text-gray-500">
-														Selecione uma localização ou marque "Mostrar todas as localizações"
+														Selecione uma localização ou marque &quot;Mostrar todas as localizações&quot;
 													</div>
 												);
 											}
