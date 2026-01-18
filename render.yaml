@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: uau-clube-admin
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # PORT é definido automaticamente pelo Render
+      # Adicione outras variáveis de ambiente conforme necessário
+      # - key: VITE_API_URL
+      #   sync: false
+
