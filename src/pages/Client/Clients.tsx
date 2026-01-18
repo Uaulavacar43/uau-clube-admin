@@ -90,6 +90,7 @@ export default function ClientsPage() {
 						<UserCard
 							key={client.id}
 							user={client}
+							onDelete={fetchUsers}
 						/>
 					))}
 			</div>

@@ -1,4 +1,4 @@
-import { Eye, Pen } from "lucide-react";
+import { Eye, Pen, Trash2 } from "lucide-react";
 import { User } from "../../types/User";
 import { getRoleBadgeColor, translateRole } from "../../utils/translateRole";
 import { Button } from "../ui/Button";
@@ -6,18 +6,57 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getStatusBadgeColor, translateStatus } from "../../utils/translateStatus";
 import { cn } from "../../utils/cn";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "../ui/alert-dialog";
+import { apiWrapper } from "../../services/api";
+import handleError from "../../error/handleError";
+import { toast } from "sonner";
 
 interface UserCardProps {
 	user: User;
+	onDelete?: () => void;
 }
 
-export function UserCard({ user }: UserCardProps) {
+export function UserCard({ user, onDelete }: UserCardProps) {
 	const [expandedSubscription, setExpandedSubscription] = useState<number | null>(null);
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const navigate = useNavigate()
 
 	const toggleSubscription = (subscriptionId: number) => {
 		setExpandedSubscription(expandedSubscription === subscriptionId ? null : subscriptionId);
+	};
+
+	const handleDeleteClick = () => {
+		setShowDeleteDialog(true);
+	};
+
+	const confirmDelete = async () => {
+		try {
+			setIsDeleting(true);
+			await apiWrapper(`/users/${user.id}`, {
+				method: 'DELETE'
+			});
+			toast.success('Usuário deletado com sucesso!');
+			setShowDeleteDialog(false);
+			if (onDelete) {
+				onDelete();
+			}
+		} catch (err) {
+			const handledError = handleError(err);
+			toast.error(`Erro ao deletar usuário: ${handledError.message}`);
+		} finally {
+			setIsDeleting(false);
+		}
 	};
 
 	const hasMultipleSubscriptions = user.subscriptions && user.subscriptions.length > 1;
@@ -63,7 +102,7 @@ export function UserCard({ user }: UserCardProps) {
 					</div>
 				</div>
 
-				<div className="flex justify-end sm:justify-center items-center mt-2 sm:mt-0">
+				<div className="flex justify-end sm:justify-center items-center mt-2 sm:mt-0 gap-1">
 					<Button
 						variant="ghost"
 						className="text-[#FF5226] hover:text-[#FF5226] hover:bg-orange-50 px-4 py-2 flex-shrink-0 gap-1"
@@ -79,6 +118,14 @@ export function UserCard({ user }: UserCardProps) {
 					>
 						<Pen size={16} />
 						Editar
+					</Button>
+					<Button
+						variant="ghost"
+						className="text-red-600 hover:text-red-700 hover:bg-red-50 px-4 py-2 flex-shrink-0 gap-1"
+						onClick={handleDeleteClick}
+					>
+						<Trash2 size={16} />
+						Deletar
 					</Button>
 				</div>
 			</div>
@@ -146,6 +193,28 @@ export function UserCard({ user }: UserCardProps) {
 					</div>
 				</div>
 			)}
+
+			<AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+						<AlertDialogDescription>
+							Tem certeza que deseja deletar o usuário <strong>{user.name}</strong> ({user.email})?
+							Esta ação não pode ser desfeita.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={confirmDelete}
+							disabled={isDeleting}
+							className="bg-red-600 hover:bg-red-700"
+						>
+							{isDeleting ? "Deletando..." : "Deletar"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	)
 }
