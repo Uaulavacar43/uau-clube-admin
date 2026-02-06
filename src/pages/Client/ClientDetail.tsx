@@ -133,7 +133,7 @@ function ClientDetail() {
 					/>
 
 					<TabPanel id="subscriptions" activeTab={activeTab}>
-						<ClientSubscriptions subscriptions={user.subscriptions} cars={user.cars ?? []} />
+						<ClientSubscriptions subscriptions={user.subscriptions} cars={user.cars ?? []} userId={user.id} />
 					</TabPanel>
 
 					<TabPanel id="wash-history" activeTab={activeTab}>

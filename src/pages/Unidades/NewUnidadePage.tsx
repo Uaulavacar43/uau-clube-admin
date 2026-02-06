@@ -24,7 +24,7 @@ interface FormData {
 	phoneNumber: string;
 	managerId: string;
 	flow: "LOW" | "MODERATE" | "HIGH";
-	images: FileList;
+	images?: FileList;
 }
 
 interface Service {
@@ -180,19 +180,13 @@ export default function NewUnidadePage() {
 				const response = await apiWrapper<{ services: Service[], totalPages: number }>("/wash-services");
 
 				if (response) {
-					// Verificar se a resposta contém a propriedade 'services'
 					if (response.services && Array.isArray(response.services)) {
-						// Definir todos os serviços como disponíveis por padrão
 						setServices(response.services.map(service => ({ ...service, isAvailable: true })));
 					} else if (Array.isArray(response)) {
-						// Se a resposta for diretamente um array
 						setServices(response.map(service => ({ ...service, isAvailable: true })));
-					} else {
-						console.error("Formato de resposta inesperado:", response);
 					}
 				}
 			} catch (err) {
-				console.error("Erro ao buscar serviços:", err);
 				setError("Não foi possível carregar os serviços. Por favor, tente novamente mais tarde.");
 			}
 		};
@@ -202,10 +196,8 @@ export default function NewUnidadePage() {
 
 	const onSubmit = async (data: FormData) => {
 		try {
-			console.log("Iniciando envio da unidade:", data.name);
 			setError(null);
 
-			// Verificar campos obrigatórios
 			const requiredFields = [
 				{ field: 'name', label: 'Nome' },
 				{ field: 'street', label: 'Rua' },
@@ -221,41 +213,22 @@ export default function NewUnidadePage() {
 				.map(({ label }) => label);
 
 			if (missingFields.length > 0) {
-				console.error("Campos obrigatórios faltando:", missingFields);
 				setError(`Os seguintes campos são obrigatórios: ${missingFields.join(', ')}`);
-				setActiveTab('general'); // Voltar para a aba de informações gerais
+				setActiveTab('general');
 				return;
 			}
 
 			let imageUrl = null;
 
-			// Processar a imagem se foi enviada
 			if (data.images && data.images.length > 0) {
 				try {
 					imageUrl = await processImage(data.images[0], 'wash-location');
 				} catch (err) {
-					console.error("Erro no upload da imagem:", err);
 					setError("Erro ao fazer upload da imagem. Tente novamente.");
 					return;
 				}
 			}
 
-			// Verificar se há horários configurados
-			if (openingHours.length === 0) {
-				// Opcional: descomente para tornar obrigatório
-				// setError("Por favor, adicione ao menos um dia de funcionamento.");
-				// return;
-			}
-
-			// Verificar se há serviços disponíveis selecionados
-			const availableServices = services.filter(service => service.isAvailable);
-			if (availableServices.length === 0) {
-				// Opcional: descomente para tornar obrigatório
-				// setError("Por favor, selecione ao menos um serviço disponível.");
-				// return;
-			}
-
-			// Preparar dados para envio no formato correto esperado pelo backend
 			const unitData = {
 				name: data.name,
 				street: data.street,
@@ -280,7 +253,6 @@ export default function NewUnidadePage() {
 			};
 
 			try {
-				// Enviar dados para o backend
 				await apiWrapper('/wash-location/complete', {
 					method: 'POST',
 					data: unitData,
@@ -289,15 +261,12 @@ export default function NewUnidadePage() {
 					}
 				});
 
-				console.log("Unidade criada com sucesso");
 				navigate('/units');
 			} catch (apiError) {
-				console.error("Erro ao criar unidade:", apiError);
 				const handledError = handleError(apiError);
 				setError(`Erro ao criar unidade: ${handledError.message}`);
 			}
 		} catch (err) {
-			console.error("Erro geral no envio:", err);
 			const handledError = handleError(err);
 			setError(`Erro inesperado: ${handledError.message}`);
 		}
@@ -386,25 +355,19 @@ export default function NewUnidadePage() {
 						className="bg-[#FF5226] hover:bg-[#FF5226]/90 text-white"
 						disabled={isSubmitting}
 						onClick={() => {
-							// Validação visual antes de tentar enviar
 							if (!selectedManager) {
 								setError("Por favor, selecione um gerente.");
 								return;
 							}
 
-							// Se estiver na aba general, acionar o submit do formulário
 							if (activeTab === 'general') {
 								const formElement = document.getElementById('new-unidade-form') as HTMLFormElement;
 								if (formElement) {
 									formElement.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
 								}
 							} else {
-								// Se estiver em outra aba, chamar diretamente o onSubmit com os valores atuais do formulário
-
-								// Usar getValues para obter todos os valores do formulário
 								const formValues = getValues();
 
-								// Garantir que o managerId está definido
 								if (!formValues.managerId && selectedManager) {
 									formValues.managerId = String(selectedManager.id);
 								}
@@ -699,11 +662,10 @@ export default function NewUnidadePage() {
 							<h2 className="mb-4 text-lg font-medium">Imagem</h2>
 							<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 								<div className="space-y-4">
-									<Label htmlFor="images">Imagem da Unidade</Label>
+									<Label htmlFor="images">Imagem da Unidade (Opcional)</Label>
 									<Controller
 										name="images"
 										control={control}
-										rules={{ required: "Pelo menos uma imagem é obrigatória" }}
 										render={({ field: { onChange }, fieldState: { error } }) => (
 											<FileUpload
 												onChange={(files) => {

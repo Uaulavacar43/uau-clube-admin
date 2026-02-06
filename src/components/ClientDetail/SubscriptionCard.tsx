@@ -15,6 +15,9 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [updateError, setUpdateError] = useState<string | null>(null);
 	const [updateSuccess, setUpdateSuccess] = useState(false);
+	const [isActivating, setIsActivating] = useState(false);
+	const [activateError, setActivateError] = useState<string | null>(null);
+	const [activateSuccess, setActivateSuccess] = useState(false);
 
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('pt-BR', {
@@ -80,16 +83,70 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 		}
 	};
 
+	const handleActivateSubscription = async () => {
+		setIsActivating(true);
+		setActivateError(null);
+		setActivateSuccess(false);
+
+		try {
+			await apiWrapper(
+				`/subscription/${subscription.id}/activate`,
+				{
+					method: 'POST',
+					data: {
+						planId: subscription.planId
+					}
+				}
+			);
+
+			setActivateSuccess(true);
+			setTimeout(() => {
+				window.location.reload();
+			}, 1500);
+		} catch (error) {
+			if (error instanceof AppError) {
+				setActivateError(error.message);
+			} else {
+				setActivateError('Erro ao ativar assinatura. Tente novamente mais tarde.');
+			}
+		} finally {
+			setIsActivating(false);
+		}
+	};
+
 	return (
 		<div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
 			<div className="flex items-center justify-between mb-4">
 				<h3 className="text-lg font-semibold text-gray-900">
 					Assinatura #{subscription.id}
 				</h3>
-				<span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(subscription.isActive)}`}>
-					{subscription.isActive ? 'Ativa' : 'Inativa'}
-				</span>
+				<div className="flex items-center gap-3">
+					<span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(subscription.isActive)}`}>
+						{subscription.isActive ? 'Ativa' : 'Inativa'}
+					</span>
+					{!subscription.isActive && (
+						<button
+							className={`px-4 py-2 rounded-md text-white font-medium ${isActivating ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+							onClick={handleActivateSubscription}
+							disabled={isActivating}
+						>
+							{isActivating ? 'Ativando...' : 'Ativar Assinatura'}
+						</button>
+					)}
+				</div>
 			</div>
+
+			{activateError && (
+				<div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+					{activateError}
+				</div>
+			)}
+
+			{activateSuccess && (
+				<div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-sm">
+					Assinatura ativada com sucesso! Recarregando...
+				</div>
+			)}
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 				<div>
