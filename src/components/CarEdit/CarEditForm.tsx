@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { apiWrapper } from '../../services/api';
 import handleError from '../../error/handleError';
@@ -18,6 +18,8 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle
 } from '../../components/ui/alert-dialog';
+import { useAuth } from '../../hooks/useAuth';
+import { planService, Plan } from '../../services/planService';
 
 interface CarType {
 	id: number;
@@ -43,11 +45,89 @@ interface CarEditFormProps {
 }
 
 export default function CarEditForm({ car, onUpdateSuccess }: CarEditFormProps) {
+	const { user } = useAuth();
+	const isAdmin = user?.role === 'ADMIN';
+
 	const [isEditing, setIsEditing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+
+	// Activate vehicle states
+	const [showActivateDialog, setShowActivateDialog] = useState(false);
+	const [plans, setPlans] = useState<Plan[]>([]);
+	const [selectedPlanId, setSelectedPlanId] = useState<number | undefined>();
+	const [expirationDate, setExpirationDate] = useState<string>('');
+	const [isActivating, setIsActivating] = useState(false);
+	const [activateError, setActivateError] = useState<string | null>(null);
+	const [loadingPlans, setLoadingPlans] = useState(false);
+
+	// Load plans when activation dialog opens
+	useEffect(() => {
+		if (showActivateDialog && plans.length === 0) {
+			loadPlans();
+		}
+	}, [showActivateDialog]);
+
+	const loadPlans = async () => {
+		setLoadingPlans(true);
+		try {
+			const plansData = await planService.listPlans();
+			setPlans(plansData);
+		} catch (err) {
+			console.error('Erro ao carregar planos:', err);
+			toast.error('Erro ao carregar planos');
+		} finally {
+			setLoadingPlans(false);
+		}
+	};
+
+	const handleActivateVehicle = async () => {
+		if (!selectedPlanId) {
+			setActivateError('Selecione um plano');
+			return;
+		}
+
+		if (!expirationDate) {
+			setActivateError('Informe a data de vencimento');
+			return;
+		}
+
+		setIsActivating(true);
+		setActivateError(null);
+
+		try {
+			await apiWrapper('/subscription/create', {
+				method: 'POST',
+				data: {
+					userId: car.userId,
+					planId: selectedPlanId,
+					carId: car.id,
+					endDate: expirationDate,
+				},
+			});
+
+			toast.success('Veículo ativado com sucesso!');
+			setShowActivateDialog(false);
+			setSelectedPlanId(undefined);
+			setExpirationDate('');
+			onUpdateSuccess();
+		} catch (err) {
+			const handledError = handleError(err);
+			setActivateError(handledError.message);
+			toast.error(`Erro ao ativar veículo: ${handledError.message}`);
+		} finally {
+			setIsActivating(false);
+		}
+	};
+
+	const formatCurrency = (amount: number): string => {
+		return new Intl.NumberFormat('pt-BR', {
+			style: 'currency',
+			currency: 'BRL'
+		}).format(amount);
+	};
 
 	const {
 		control,
@@ -127,6 +207,7 @@ export default function CarEditForm({ car, onUpdateSuccess }: CarEditFormProps) 
 
 	return (
 		<>
+			{/* Delete Dialog */}
 			<AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
@@ -148,6 +229,87 @@ export default function CarEditForm({ car, onUpdateSuccess }: CarEditFormProps) 
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+
+			{/* Activate Vehicle Dialog */}
+			<AlertDialog open={showActivateDialog} onOpenChange={setShowActivateDialog}>
+				<AlertDialogContent className="max-w-md">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Ativar Veículo</AlertDialogTitle>
+						<AlertDialogDescription>
+							Ative o veículo <strong>{car.brand} {car.model}</strong> ({car.licensePlate}) criando uma assinatura.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+
+					<div className="space-y-4 py-4">
+						{loadingPlans ? (
+							<p className="text-gray-500 text-sm">Carregando planos...</p>
+						) : (
+							<>
+								<div>
+									<Label htmlFor={`plan-select-${car.id}`} className="block text-sm font-medium text-gray-700 mb-1">
+										Selecione o Plano *
+									</Label>
+									<select
+										id={`plan-select-${car.id}`}
+										className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+										value={selectedPlanId || ''}
+										onChange={(e) => setSelectedPlanId(e.target.value ? Number(e.target.value) : undefined)}
+										disabled={isActivating}
+									>
+										<option value="">Selecione um plano</option>
+										{plans.map((plan) => (
+											<option key={plan.id} value={plan.id}>
+												{plan.name} - {formatCurrency(plan.price)}
+											</option>
+										))}
+									</select>
+								</div>
+
+								<div>
+									<Label htmlFor={`expiration-date-${car.id}`} className="block text-sm font-medium text-gray-700 mb-1">
+										Data de Vencimento *
+									</Label>
+									<Input
+										id={`expiration-date-${car.id}`}
+										type="date"
+										className="w-full"
+										value={expirationDate}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExpirationDate(e.target.value)}
+										disabled={isActivating}
+										min={new Date().toISOString().split('T')[0]}
+									/>
+								</div>
+
+								{activateError && (
+									<div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
+										{activateError}
+									</div>
+								)}
+							</>
+						)}
+					</div>
+
+					<AlertDialogFooter>
+						<AlertDialogCancel 
+							disabled={isActivating}
+							onClick={() => {
+								setSelectedPlanId(undefined);
+								setExpirationDate('');
+								setActivateError(null);
+							}}
+						>
+							Cancelar
+						</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleActivateVehicle}
+							disabled={isActivating || !selectedPlanId || !expirationDate || loadingPlans}
+							className="bg-green-600 hover:bg-green-700 focus:ring-green-600"
+						>
+							{isActivating ? 'Ativando...' : 'Ativar'}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 			<Card key={car.id} className="mb-4 border-0 bg-gray-50">
 				<CardContent className="p-4">
 					{!isEditing ? (
@@ -165,6 +327,15 @@ export default function CarEditForm({ car, onUpdateSuccess }: CarEditFormProps) 
 								</div>
 							</div>
 							<div className="flex gap-2">
+								{isAdmin && (
+									<Button
+										variant="ghost"
+										onClick={() => setShowActivateDialog(true)}
+										className="text-green-600 hover:text-green-700 hover:bg-green-50 text-sm py-1 px-2"
+									>
+										Ativar Veículo
+									</Button>
+								)}
 								<Button
 									variant="ghost"
 									onClick={() => setIsEditing(true)}
