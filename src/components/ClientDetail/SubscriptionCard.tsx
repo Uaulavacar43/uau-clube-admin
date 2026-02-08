@@ -18,6 +18,7 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 	const [isActivating, setIsActivating] = useState(false);
 	const [activateError, setActivateError] = useState<string | null>(null);
 	const [activateSuccess, setActivateSuccess] = useState(false);
+	const [inactivateSuccess, setInactivateSuccess] = useState(false);
 
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('pt-BR', {
@@ -49,8 +50,15 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 		return labels[planType] || planType;
 	};
 
-	const handleUpdateSubscription = async () => {
-		if (!selectedCarId) return;
+	const handleUpdateSubscription = async (isActive?: boolean) => {
+		const body = {
+			carId: selectedCarId ?? subscription.carId,
+			isActive: isActive ?? subscription.isActive
+		}
+
+		if (isActive) {
+			setIsActivating(true);
+		}
 
 		setIsUpdating(true);
 		setUpdateError(null);
@@ -61,13 +69,14 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 				`/subscription/${subscription.id}`,
 				{
 					method: 'PATCH',
-					data: {
-						carId: selectedCarId
-					}
+					data: body
 				}
 			);
 
 			setUpdateSuccess(true);
+			if (isActive) {
+				setInactivateSuccess(true);
+			}
 			// Reload the page after 1.5 seconds to show updated data
 			setTimeout(() => {
 				window.location.reload();
@@ -78,7 +87,9 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 			} else {
 				setUpdateError('Erro ao vincular veículo. Tente novamente mais tarde.');
 			}
+			setInactivateSuccess(false);
 		} finally {
+			setIsActivating(false);
 			setIsUpdating(false);
 		}
 	};
@@ -124,7 +135,15 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 					<span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(subscription.isActive)}`}>
 						{subscription.isActive ? 'Ativa' : 'Inativa'}
 					</span>
-					{!subscription.isActive && (
+					{subscription.isActive ? (
+						<button
+							className={`px-4 py-2 rounded-md text-white font-medium ${isActivating ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+							onClick={() => handleUpdateSubscription(false)}
+							disabled={isActivating}
+						>
+							{isActivating ? 'Inativando...' : 'Inativar Assinatura'}
+						</button>
+					) : (
 						<button
 							className={`px-4 py-2 rounded-md text-white font-medium ${isActivating ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
 							onClick={handleActivateSubscription}
@@ -132,6 +151,7 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 						>
 							{isActivating ? 'Ativando...' : 'Ativar Assinatura'}
 						</button>
+
 					)}
 				</div>
 			</div>
@@ -139,6 +159,12 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 			{activateError && (
 				<div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
 					{activateError}
+				</div>
+			)}
+
+			{inactivateSuccess && (
+				<div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-sm">
+					Assinatura inativada com sucesso! Recarregando...
 				</div>
 			)}
 
@@ -238,7 +264,7 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription, cars 
 
 					<button
 						className={`px-4 py-2 rounded-md text-white font-medium ${isUpdating || !selectedCarId ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-						onClick={handleUpdateSubscription}
+						onClick={() => handleUpdateSubscription()}
 						disabled={isUpdating || !selectedCarId}
 					>
 						{isUpdating ? 'Atualizando...' : 'Vincular veículo'}
