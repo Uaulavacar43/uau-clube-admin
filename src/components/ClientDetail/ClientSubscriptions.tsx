@@ -84,7 +84,7 @@ const ClientSubscriptions: React.FC<ClientSubscriptionsProps> = ({ subscriptions
 	const renderCreateForm = () => (
 		<div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
 			<h3 className="text-lg font-semibold text-gray-900 mb-4">Criar Nova Assinatura</h3>
-			
+
 			{loadingPlans ? (
 				<p className="text-gray-500">Carregando planos...</p>
 			) : (
@@ -215,9 +215,17 @@ const ClientSubscriptions: React.FC<ClientSubscriptionsProps> = ({ subscriptions
 							<div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
 							{inactiveSubscriptions.length} Inativa{inactiveSubscriptions.length !== 1 ? 's' : ''}
 						</span>
+						{!showCreateForm && (
+							<button
+								className="px-4 py-2 rounded-md text-white font-medium bg-green-600 hover:bg-green-700"
+								onClick={() => setShowCreateForm(true)}
+							>
+								+ Criar Assinatura
+							</button>
+						)}
 					</div>
 				</div>
-
+				{showCreateForm && renderCreateForm()}
 				{/* Active Subscriptions */}
 				{activeSubscriptions.length > 0 && (
 					<div className="mb-8">

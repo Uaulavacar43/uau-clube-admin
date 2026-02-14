@@ -59,8 +59,6 @@ export function UserCard({ user, onDelete }: UserCardProps) {
 		}
 	};
 
-	const hasMultipleSubscriptions = user.subscriptions && user.subscriptions.length > 1;
-
 	return (
 		<div className="flex flex-col border rounded-lg shadow-sm bg-white">
 			<div
@@ -129,7 +127,7 @@ export function UserCard({ user, onDelete }: UserCardProps) {
 					</Button>
 				</div>
 			</div>
-			{hasMultipleSubscriptions && (
+			{user.subscriptions && (
 				<div className="mt-4 w-full border-t p-4">
 					<div className="flex items-center justify-between mb-2">
 						<h4 className="text-sm font-medium text-zinc-700">Assinaturas ({user.subscriptions?.length})</h4>

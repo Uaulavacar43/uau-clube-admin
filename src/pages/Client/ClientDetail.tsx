@@ -16,6 +16,12 @@ function ClientDetail() {
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string | null>(null);
 	const [activeTab, setActiveTab] = useState<string>("subscriptions");
+	const [loadingSubscription, setLoadingSubscription] = useState<boolean>(false);
+	const [activatedSubscriptionFinished, setActivatedSubscriptionFinished] = useState<boolean>(false);
+	const [activatedSubscriptionResult, setActivatedSubscriptionResult] = useState<{
+		message: string;
+		success: boolean;
+	} | null>(null);
 
 	const navigate = useNavigate();
 
@@ -54,6 +60,37 @@ function ClientDetail() {
 		// 	abortController.abort();
 		// };
 	}, [id]);
+
+	const handleActivateSubscription = async () => {
+		try {
+			setLoadingSubscription(true);
+			const response = await apiWrapper<{ message: string }, { userId: number }>(`/payment/activate-subscription`, {
+				method: "POST",
+				data: {
+					userId: Number(id),
+				},
+			});
+			setActivatedSubscriptionResult({
+				message: response.message,
+				success: true,
+			});
+		} catch (error) {
+			if (error instanceof Error && error.name !== 'AbortError') {
+				console.error('Error activating subscription:', error);
+				setActivatedSubscriptionResult({
+					message: 'Erro ao ativar assinatura. Tente novamente.',
+					success: false,
+				});
+			}
+		} finally {
+			setLoadingSubscription(false);
+			setActivatedSubscriptionFinished(true);
+			setTimeout(() => {
+				setActivatedSubscriptionFinished(false);
+				setActivatedSubscriptionResult(null);
+			}, 5000);
+		}
+	};
 
 	if (loading) {
 		return (
@@ -119,9 +156,30 @@ function ClientDetail() {
 					</Button>
 				</div>
 			</div>
+
+
 			<div className="max-w-7xl mx-auto">
 				<ClientHeader user={user} />
 				<ClientBasicInfo user={user} />
+				<div className="flex items-center justify-between mb-8">
+					<h1 className="text-xl font-semibold">Verificar e ativar assinatura com o ASAAS</h1>
+					<div className="flex gap-3">
+						<Button
+							className="px-4 py-2 rounded-md text-white hover:text-white font-medium bg-blue-800 hover:bg-blue-400"
+							onClick={handleActivateSubscription}
+							disabled={loadingSubscription}
+						>
+							{loadingSubscription ? "Verificando assinatura..." : "Verificar e Ativar"}
+						</Button>
+					</div>
+				</div>
+
+				{activatedSubscriptionFinished && activatedSubscriptionResult && (
+					<div className={`mb-4 p-3 ${activatedSubscriptionResult.success ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} rounded-md text-sm`}>
+						{activatedSubscriptionResult.message}
+					</div>
+				)}
+
 
 				{/* Tabs para alternar entre assinaturas e histórico de lavagens */}
 				<div className="mt-8">
