@@ -131,7 +131,9 @@ const DashboardPage: React.FC = () => {
 	const { user } = useAuth();
 	const navigate = useNavigate();
 
-	const canManageCars = ["ADMIN", "MANAGER"].includes(String((user as any)?.role ?? ""));
+	const role =
+		user && typeof user === "object" && "role" in user ? (user as { role?: unknown }).role : undefined;
+	const canManageCars = ["ADMIN", "MANAGER"].includes(String(role ?? ""));
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -176,6 +178,19 @@ const DashboardPage: React.FC = () => {
 			style: "currency",
 			currency: "BRL",
 		});
+	};
+
+	// Recharts is giving us "YYYY-MM-DD" labels; parsing that with `new Date(str)`
+	// treats it as UTC and can shift to the previous day in pt-BR timezones.
+	const parseChartDate = (value: unknown) => {
+		if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+			const [year, month, day] = value.split("-").map(Number);
+			return new Date(year, month - 1, day);
+		}
+		if (value instanceof Date) return value;
+		if (typeof value === "number") return new Date(value);
+		if (typeof value === "string") return new Date(value);
+		return new Date(NaN);
 	};
 
 	const formatNumber = (value: number) => {
@@ -571,14 +586,14 @@ const DashboardPage: React.FC = () => {
 															<XAxis
 																dataKey="date"
 																tickFormatter={(value) => {
-																	const date = new Date(value);
+																	const date = parseChartDate(value);
 																	return `${date.getDate()}/${date.getMonth() + 1}`;
 																}}
 															/>
 															<YAxis />
 															<Tooltip
 																labelFormatter={(value) => {
-																	const date = new Date(value);
+																	const date = parseChartDate(value);
 																	return `Data: ${date.toLocaleDateString("pt-BR")}`;
 																}}
 															/>
@@ -619,7 +634,7 @@ const DashboardPage: React.FC = () => {
 														date: item.date,
 														lavagens: item.count,
 													}))
-													.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+													.sort((a, b) => parseChartDate(a.date).getTime() - parseChartDate(b.date).getTime());
 
 												return (
 													<ResponsiveContainer width="100%" height="100%">
@@ -628,14 +643,14 @@ const DashboardPage: React.FC = () => {
 															<XAxis
 																dataKey="date"
 																tickFormatter={(value) => {
-																	const date = new Date(value);
+																	const date = parseChartDate(value);
 																	return `${date.getDate()}/${date.getMonth() + 1}`;
 																}}
 															/>
 															<YAxis />
 															<Tooltip
 																labelFormatter={(value) => {
-																	const date = new Date(value);
+																	const date = parseChartDate(value);
 																	return `Data: ${date.toLocaleDateString("pt-BR")}`;
 																}}
 																formatter={(value) => [`${value} lavagens`, "Lavagens"]}
